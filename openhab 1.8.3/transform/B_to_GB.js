@@ -1,0 +1,1 @@
+(function(i){ return i / 1073741824 ; })(input)

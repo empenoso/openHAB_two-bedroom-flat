@@ -1,0 +1,118 @@
+Group Entrance
+Group Living_room
+Group Kitchen
+Group Restroom
+Group Bedroom
+Group Outside
+
+String	Entrance_st		"Прихожая/Подъезд"
+String	Living_room_st	"Гостиная"
+String	Kitchen_st		"Кухня"
+String	Restroom_st		"Туалет"
+String	Bedroom_st		"Спальня"
+String	Outside_st		"Улица"
+
+Number	ChartPeriod		"Интервал"		<line>
+String	ChartPeriodName	"График: "
+
+Number   WunderGround_Temperature	"Temperature [%.2f °C]"   (Outdoor)    {weather="locationId=perm, type=temperature, property=current"}
+String   WunderGround_Condition		"Состояние погоды (wunderground.com) [%s]"  	{weather="locationId=perm, type=condition, property=text"}
+Number   WunderGround_Humidity		"Humidity [%d %%]"    {weather="locationId=perm, type=atmosphere, property=humidity"}
+Number   WunderGround_Pressure		"Pressure [%.2f mb]"   {weather="locationId=perm, type=atmosphere, property=pressure"}
+String   WunderGround_Station_Name	"Station Name [%s]"        {weather="locationId=perm, type=station, property=name"}
+String   WunderGround_Station_Id	"Station Id [%s]"          {weather="locationId=perm, type=station, property=id"}
+DateTime WunderGround_LastUpdate	"Last update [%1$td.%1$tm.%1$tY %1$tH:%1$tM]"        {weather="locationId=perm, type=condition, property=lastUpdate"}
+
+Group MikroTik	
+Number MikroTik_Wireless_Clients 				"MikroTik, Wi-Fi клиенты, ед. [%s]"  			(Entrance)	{ exec="<[/opt/openhab/MikroTik_Wireless_Clients.sh:300000:REGEX((.*?))]" }	//требуется установка sudo apt-get install snmp snmpd 	//http://forum.mikrotik.com/viewtopic.php?t=17438 
+Number MikroTik_interface_bytes_out_transmit	"MikroTik, Transmit (bytes-out), GiB [%.2f]"	(MikroTik)	{ exec="<[/opt/openhab/MikroTik_interface_bytes-out_transmit.sh:3600000:JS(B_to_GB.js)]" }
+Number MikroTik_interface_bytes_in_receive		"MikroTik, Receive (bytes-in), GiB [%.2f]"		(MikroTik)	{ exec="<[/opt/openhab/MikroTik_interface_bytes_in_receive.sh:3600000:JS(B_to_GB.js)]" }
+
+Number 	A6_Domofon		"Домофон (XP3, вх. ADC6) [%.2f] ед. АЦП"				(Entrance)	{megadevice="sec:192.168.88.72:14:10"}
+
+Group	Lights_Random
+Switch	P12				"Beward B2710DR, подъезд (P12) [MAP(beward.map):%s]"	(Entrance)	{megadevice="sec:192.168.88.72:12"} //OFF="ВКЛ", ON="ВЫКЛ"
+Switch	Sonoff_corridor	"Лампа в коридоре, (Sonoff MegaESP)"					(Lights_Random, Entrance)	{megadevice="sec:192.168.88.73:4"} 
+Switch	Ghost_Lights	"Имитация присутствия, свет"							(Entrance)
+
+Number USB_Maximum_amplitude		"USB Maximum amplitude [%.2f]" 		{ exec="<[/opt/openhab/USB_dB_Maximum_amplitude.sh:120000:REGEX((.*?))]" } //sudo apt-get install sox alsa-utils //частота в миллисекундах - минуты в миллисекунды
+Number USB_Maximum_amplitude_dB		"Датчик шума USB, dB [%.2f]"	(Entrance) 	// http://192.168.88.70:8080/chart?items=USB_Maximum_amplitude_dB&period=D&h=900&w=1900
+
+Group Pipes	
+Group Outdoor 	
+Number	P2_DS18B20				"DS18B20 на улице (P2), °C [%.2f]"		(Outdoor,Pipes)		{megadevice="sec:192.168.88.72:2,1w,t:60"}
+Number 	P3_TEMT6000				"Освещ. улицы TEMT6000 (P3), ед. АЦП [%.2f]"				{megadevice="sec:192.168.88.72:3:180"}
+
+Number P4_MQ2			"Газ и дым MQ-2 (P4), ед. АЦП [%.2f]"	(Kitchen)	{megadevice="sec:192.168.88.72:4:60"}
+
+Group Indoor
+Number P5_DS18B20_MQ2			"DS18B20 с плитой (P5), °C [%.2f]" (Kitchen, Indoor)		{megadevice="sec:192.168.88.72:5,1w,t:60"}
+Number P1_DS18B20_livingroom	"DS18B20 с телевизором (P1), °C [%.2f]" (Living_room, Indoor)		{megadevice="sec:192.168.88.72:1,1w,t:60"}
+
+Group Incotex201 	
+Number  P6_CountElecImp  	  					"Импульсы MegaD-14-IN (P6), текущее значение (3200/кВт*ч) [%s]" {megadevice="sec:192.168.88.72:6,c:60"} //	{ http="<[http://192.168.88.72/sec/?pt=6&cmd=get:60000:REGEX(.*?([0-9]+).*)]" } //https://github.com/openhab/openhab/wiki/Transformations 
+Number  MercuryIncotex201KWh   					"Э/э Меркурий 201.5, кВт*ч [%.2f]"				(Incotex201)
+String  MercuryIncotex201KWh_general  			"Э/э Меркурий 201.5, кВт*ч [%s]"				(Entrance)			
+Number  MercuryIncotex201KWh_Kalends			"Э/э на начало месяца, кВт*ч [%.2f]"			(Incotex201)
+Number  MercuryIncotex201KWh_Consumption		"Э/э расход в тек.месяце, кВт*ч [%.2f]"			(Incotex201)
+Number  MercuryIncotex201KWh_Consumption_Price	"Э/э по 3,62 в тек.месяце, руб. [%.2f]"		
+
+Number P7_DS18B20_WC_cold			"Хол. труба DS18B20 (P7), °C [%.2f]"		(Pipes)		{megadevice="sec:192.168.88.72:7,1w,t:60"}
+Number P7_DS18B20_WC_cold_min		"Мин. значение хол. трубы в месяце (DS18B20) (P7), °C [%.2f]"
+Number P8_DS18B20_WC_hot			"Гор. труба DS18B20 (P8), °C [%.2f]"		(Pipes)		{megadevice="sec:192.168.88.72:8,1w,t:60"}
+Number P8_DS18B20_WC_hot_max		"Макс. значение гор. трубы в месяце (DS18B20) (P8), °C [%.2f]"
+
+Group	WaterCold 
+String	CountWaterCold					"Холодная вода: "
+Switch	P10_WaterPulse_cold				"Холодная, счетчик Valtec VLF-R-IL (P10) [MAP(en.map):%s]"	{megadevice="sec:192.168.88.72:10:60"}
+Number	CountWaterM3Cold				"Вода Valtec VLF-R-IL хол., м. куб. [%.2f]"					(WaterCold)
+String	CountWaterM3Cold_general		"Холодная Valtec, м. куб. [%s]"
+Number	CountWaterM3Cold_Kalends		"Вода хол. на 1е число, м. куб. [%.2f]"						(WaterCold)
+Number	CountWaterM3Cold_Consumption	"ХВС расход в тек.мес., м. куб. [%.2f]"						(WaterCold)
+
+Group	WaterHot 
+String	CountWaterHot					"Горячая вода: "
+Switch	P11_WaterPulse_hot				"Горячая, счетчик Valtec VLF-R-IL (P11) [MAP(en.map):%s]"	{megadevice="sec:192.168.88.72:11:60"}
+Number	CountWaterM3Hot					"Вода Valtec VLF-R-IL гор., м. куб. [%.2f]"					(WaterHot)
+String	CountWaterM3Hot_general			"Горячая Valtec, м. куб. [%s]"					(WaterHot)
+Number	CountWaterM3Hot_Kalends			"Вода гор. на 1е число, м. куб. [%.2f]"						(WaterHot)
+Number	CountWaterM3Hot_Consumption		"ГВС расход в тек.мес., м. куб. [%.2f]"						(WaterHot)
+
+Switch		P9_Door						"Дверь (P9) [MAP(door.map):%s]"								{megadevice="sec:192.168.88.72:9:15"}
+String 		P9_Door_state				"Дверь (P9) [%s]"
+String 		P9_Door_state_general		"Дверь (P9) [%s]"						(Entrance)
+Number		P9_Door_number				"Дверь (P9) [%s]"
+DateTime	P9_last_use					"P9 last use [%1$td.%1$tm, %1$tR]"
+Number 		P9_DoorRunStart 			"P9_DoorRunStart [%s]"	
+Number		P9_last_use_ago				"P9 last use hours ago [%.2f]"
+
+Number P13_DS18B20_bedroom		"Батарея спальни (DS18B20) (P13), °C [%.2f]"		(Pipes)		{megadevice="sec:192.168.88.72:13,1w,t:60"}
+Number P13_DS18B20_bedroom_avg	"Средняя темп. батарей в месяце (DS18B20) (P13), °C [%.2f]"
+
+DateTime dateTimeNTP			"Дата и время NTP [%1$tA, %1$td.%1$tm.%1$tY, %1$tR]" 		{ ntp="Asia/Yekaterinburg" }  	 //расшифровка букв https://docs.oracle.com/javase/8/docs/api/java/util/Formatter.html
+String	dateTime				"Дата и время сервера [%s]"
+
+Group System
+Number CPUtemp				"Температура CPU Raspberry Pi 3, °C [%.2f]" 					{ exec="<[cat /sys/class/thermal/thermal_zone0/temp:300000:JS(cputemp.js)]" }
+Number GPUtemp				"Температура GPU Raspberry Pi 3, °C [%.2f]" 					{ exec="<[/opt/vc/bin/vcgencmd measure_temp:300000:REGEX(temp=(.*?)'C)]" }
+String uptimeFormatted		"Время работы Raspberry Pi 3, ЧЧ:ММ [%s]" 						{ systeminfo="UptimeFormatted:300000:$$" } //требуется установка https://groups.google.com/forum/#!topic/openhab/18C7FYpxWTQ и https://github.com/openhab/openhab/wiki/Systeminfo-Binding
+Number cpuCombined			"Нагрузка на CPU Raspberry Pi 3 общая [%.2f%%]" 	(System)	{ systeminfo="CpuCombined:300000" }
+Number openhabCpuPercent	"Нагрузка на CPU от openHAB [%.2f%%]" 				(System) 	{ systeminfo="ProcessCpuPercent:300000:$$" }
+Number memFreePercent		"Свободная память Raspberry Pi 3 [%.2f%%]" 	 					{ systeminfo="MemFreePercent:300000" }
+
+Group LAN
+String	Network				"Доступность оборудования [MAP(network.map):%s]"	(Entrance)
+Number	LAN_MikroTik		"MikroTik hAP lite RB941-2nD-TC, ms [%.2f]"		(LAN)		{ exec="<[/opt/openhab/LAN_MikroTik.sh:600000:REGEX((.*?))]" }	//раз в 10 минут	
+Number	LAN_MegaD328		"MegaD-328 + MegaD-14-IN, ms [%.2f]"			(LAN)		{ exec="<[/opt/openhab/LAN_MegaD328.sh:600000:REGEX((.*?))]" }
+Number	LAN_Sonoff_corridor	"Sonoff MegaESP в коридоре, ms [%.2f]"						{ exec="<[/opt/openhab/LAN_Sonoff_corridor.sh:60000:REGEX((.*?))]" } //раз в 1 минуту
+Number	LAN_Beward			"Beward B2710DR, ms [%.2f]"						(LAN)		{ exec="<[/opt/openhab/LAN_Beward.sh:600000:REGEX((.*?))]" }	
+// http://192.168.88.70:8080/chart?items=LAN_MikroTik,LAN_MegaD328,LAN_Beward&period=D&h=900&w=1800
+
+Group WAN
+Number	WAN_yaru			"ya.ru, ms [%.2f]"					(WAN)		{ exec="<[/opt/openhab/WAN_yaru.sh:660000:REGEX((.*?))]" }	//раз в 11 минут
+Number	WAN_pastryartru		"pastryart.ru, ms [%.2f]"			(WAN)		{ exec="<[/opt/openhab/WAN_pastryartru.sh:660000:REGEX((.*?))]" }
+
+Number openHAB_chart		"Графики для отчета по почте [%s]" 				{ exec="<[/opt/openhab/openHAB_chart.sh:86400000:REGEX((.*?))]" } 
+
+//Number 	A6_ADC				"XP3, Вход ADC6, [%.2f] ед. АЦП"									{megadevice="sec:192.168.88.72:14:60"}
+//Number 	A7_ADC				"XP4, Вход ADC7, [%.2f] ед. АЦП"									{megadevice="sec:192.168.88.72:15:60"}

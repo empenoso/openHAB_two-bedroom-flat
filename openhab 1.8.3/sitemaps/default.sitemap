@@ -1,0 +1,195 @@
+sitemap default label="xxxxx"	// http://192.168.88.70:8080/chart?items=P8_DS18B20_WC_hot,P7_DS18B20_WC_cold,P13_DS18B20_bedroom&period=3D&h=900&w=1800
+{
+Frame label="Квартира" {
+	
+Text item=Entrance_st icon="corridor"	{
+	Text item=LAN_Sonoff_corridor icon="chart"
+	Switch item=Sonoff_corridor icon="light"	
+	Text item=MercuryIncotex201KWh_general icon="info" {
+		Text item=MercuryIncotex201KWh_Kalends icon="info"		
+		Text item=MercuryIncotex201KWh_Consumption icon="line"
+		Text item=MercuryIncotex201KWh_Consumption_Price icon="pie"
+		
+		Text item=ChartPeriodName
+		Switch	item=ChartPeriod	label="Период"	mappings=[0="12 часов", 1="3 дня", 2="2 недели", 3="4 месяца"]
+		Chart item=Incotex201 period=12h refresh=30000 visibility=[ChartPeriod==0, ChartPeriod=="Uninitialized"]
+		Chart item=Incotex201 period=3D refresh=60000 visibility=[ChartPeriod==1]
+		Chart item=Incotex201 period=2W refresh=60000 visibility=[ChartPeriod==2]	
+		Chart item=Incotex201 period=4M refresh=60000 visibility=[ChartPeriod==3]		
+		}	
+	Text item=A6_Domofon icon="line"	{
+		Switch	item=ChartPeriod	label="Период"	mappings=[0="12 часов", 1="3 дня", 2="2 недели", 3="4 месяца"]
+		Chart item=A6_Domofon period=12h refresh=30000 visibility=[ChartPeriod==0, ChartPeriod=="Uninitialized"]
+		Chart item=A6_Domofon period=3D refresh=60000 visibility=[ChartPeriod==1]
+		Chart item=A6_Domofon period=2W refresh=60000 visibility=[ChartPeriod==2]	
+		Chart item=A6_Domofon period=4M refresh=60000 visibility=[ChartPeriod==3]	
+	}			
+	Text item=P9_Door_state_general icon="frontdoor-open" {	
+		Text item=P9_Door icon="door-open"
+		Text item=P9_last_use icon="pie"	
+		Text item=ChartPeriodName
+		Switch	item=ChartPeriod	label="Период"	mappings=[0="12 часов", 1="3 дня", 2="2 недели", 3="4 месяца"]
+		Chart item=P9_last_use_ago period=12h refresh=30000 visibility=[ChartPeriod==0, ChartPeriod=="Uninitialized"]
+		Chart item=P9_last_use_ago period=3D refresh=60000 visibility=[ChartPeriod==1]
+		Chart item=P9_last_use_ago period=2W refresh=60000 visibility=[ChartPeriod==2]	
+		Chart item=P9_last_use_ago period=4M refresh=60000 visibility=[ChartPeriod==3]		
+		} 		
+	Text item=USB_Maximum_amplitude_dB icon="line"	{
+		Switch	item=ChartPeriod	label="Период"	mappings=[0="12 часов", 1="3 дня", 2="2 недели", 3="4 месяца"]
+		Chart item=USB_Maximum_amplitude_dB period=12h refresh=30000 visibility=[ChartPeriod==0, ChartPeriod=="Uninitialized"]
+		Chart item=USB_Maximum_amplitude_dB period=3D refresh=60000 visibility=[ChartPeriod==1]
+		Chart item=USB_Maximum_amplitude_dB period=2W refresh=60000 visibility=[ChartPeriod==2]	
+		Chart item=USB_Maximum_amplitude_dB period=4M refresh=60000 visibility=[ChartPeriod==3]					
+	}
+	Text item=P12 icon="shield-2" //Switch item=P12 icon="shield-2" mappings=[OFF="ВКЛ", ON="ВЫКЛ"]	
+}
+
+Text item=Living_room_st icon="sofa"	{		
+	Text item=P1_DS18B20_livingroom icon="temperature"{
+		Switch	item=ChartPeriod	label="Период"	mappings=[0="12 часов", 1="3 дня", 2="2 недели", 3="4 месяца"]		
+		Chart item=Indoor period=12h refresh=30000 visibility=[ChartPeriod==0, ChartPeriod=="Uninitialized"]
+		Chart item=Indoor period=3D refresh=60000 visibility=[ChartPeriod==1]
+		Chart item=Indoor period=2W refresh=60000 visibility=[ChartPeriod==2]	
+		Chart item=Indoor period=4M refresh=60000 visibility=[ChartPeriod==3]			
+	}		
+}
+
+Text item=Kitchen_st icon="kitchen"	{	
+	Text item=P4_MQ2 icon="fire"	{
+		Switch	item=ChartPeriod	label="Период"	mappings=[0="12 часов", 1="3 дня", 2="2 недели", 3="4 месяца"]
+		Chart item=P4_MQ2 period=12h refresh=30000 visibility=[ChartPeriod==0, ChartPeriod=="Uninitialized"]
+		Chart item=P4_MQ2 period=3D refresh=60000 visibility=[ChartPeriod==1]
+		Chart item=P4_MQ2 period=2W refresh=60000 visibility=[ChartPeriod==2]	
+		Chart item=P4_MQ2 period=4M refresh=60000 visibility=[ChartPeriod==3]			
+	}	
+	Text item=P5_DS18B20_MQ2 icon="temperature"	
+	}	
+
+Text item=Restroom_st icon="softener"	{
+	Text item=CountWaterM3Cold_general icon="info" {
+		Text item=CountWaterCold
+		Text item=CountWaterM3Cold icon="info"
+		Text item=CountWaterM3Cold_Kalends icon="energy"
+		Text item=CountWaterM3Cold_Consumption icon="line"
+		Text item=CountWaterHot
+		Text item=CountWaterM3Hot icon="info"
+		Text item=CountWaterM3Hot_Kalends  icon="energy"
+		Text item=CountWaterM3Hot_Consumption icon="line"
+		Text item=ChartPeriodName
+		Switch	item=ChartPeriod	label="Период"	mappings=[0="12 часов", 1="3 дня", 2="2 недели", 3="4 месяца"]
+		Chart item=WaterCold period=12h refresh=30000 visibility=[ChartPeriod==0, ChartPeriod=="Uninitialized"]
+		Chart item=WaterCold period=3D refresh=60000 visibility=[ChartPeriod==1]
+		Chart item=WaterCold period=2W refresh=60000 visibility=[ChartPeriod==2]	
+		Chart item=WaterCold period=4M refresh=60000 visibility=[ChartPeriod==3]
+		Chart item=WaterHot period=12h refresh=30000 visibility=[ChartPeriod==0, ChartPeriod=="Uninitialized"]
+		Chart item=WaterHot period=3D refresh=60000 visibility=[ChartPeriod==1]
+		Chart item=WaterHot period=2W refresh=60000 visibility=[ChartPeriod==2]	
+		Chart item=WaterHot period=4M refresh=60000 visibility=[ChartPeriod==3]
+		}
+	Text item=CountWaterM3Hot_general icon="info" 
+	Text item=P7_DS18B20_WC_cold icon="temperature"	{
+		Switch	item=ChartPeriod	label="Период"	mappings=[0="12 часов", 1="3 дня", 2="2 недели", 3="4 месяца"]
+		Chart item=Pipes period=12h refresh=30000 visibility=[ChartPeriod==0, ChartPeriod=="Uninitialized"]
+		Chart item=Pipes period=3D refresh=60000 visibility=[ChartPeriod==1]
+		Chart item=Pipes period=2W refresh=60000 visibility=[ChartPeriod==2]	
+		Chart item=Pipes period=4M refresh=60000 visibility=[ChartPeriod==3]			
+		}		
+	Text item=P8_DS18B20_WC_hot icon="temperature"	
+	}		
+
+Text item=Bedroom_st icon="bedroom"	{
+	Text item=P13_DS18B20_bedroom icon="heating"
+	}	
+}
+
+Frame label="Улица" {
+	Text item=P2_DS18B20 icon="temperature-max"{
+		Switch	item=ChartPeriod	label="Период"	mappings=[0="12 часов", 1="3 дня", 2="2 недели", 3="4 месяца"]
+		Chart item=P2_DS18B20 period=12h refresh=30000 visibility=[ChartPeriod==0, ChartPeriod=="Uninitialized"]
+		Chart item=P2_DS18B20 period=3D refresh=60000 visibility=[ChartPeriod==1]
+		Chart item=P2_DS18B20 period=2W refresh=60000 visibility=[ChartPeriod==2]	
+		Chart item=P2_DS18B20 period=4M refresh=60000 visibility=[ChartPeriod==3]	
+
+		Chart item=P3_TEMT6000 period=12h refresh=30000 visibility=[ChartPeriod==0, ChartPeriod=="Uninitialized"]
+		Chart item=P3_TEMT6000 period=3D refresh=60000 visibility=[ChartPeriod==1]
+		Chart item=P3_TEMT6000 period=2W refresh=60000 visibility=[ChartPeriod==2]	
+		Chart item=P3_TEMT6000 period=4M refresh=60000 visibility=[ChartPeriod==3]	
+		}
+	Text item=P3_TEMT6000 icon="solarplant"			
+	Text item=WunderGround_Condition icon="sun_clouds" {
+		Text item=P2_DS18B20 icon="temperature"
+		Text item=WunderGround_Temperature icon="temperature"		
+		Text item=WunderGround_Humidity icon="water"
+
+		Text item=ChartPeriodName
+		Switch	item=ChartPeriod	label="Период"	mappings=[0="12 часов", 1="3 дня", 2="2 недели", 3="4 месяца"]
+		Chart item=Outdoor period=12h refresh=30000 visibility=[ChartPeriod==0, ChartPeriod=="Uninitialized"]
+		Chart item=Outdoor period=3D refresh=60000 visibility=[ChartPeriod==1]
+		Chart item=Outdoor period=2W refresh=60000 visibility=[ChartPeriod==2]	
+		Chart item=Outdoor period=4M refresh=60000 visibility=[ChartPeriod==3]
+		
+		Text item=WunderGround_Pressure icon="solarplant"		
+		Text item=WunderGround_Station_Name icon="info"
+		Text item=WunderGround_Station_Id icon="info"
+		Text item=WunderGround_LastUpdate icon="info"
+		}
+}
+	
+Frame label="Служебное" {
+	Text item=dateTime	icon="calendar"	{
+		Text item=dateTimeNTP icon="calendar"
+		Text item=uptimeFormatted	icon="socket-on"		
+		Text item=CPUtemp	icon="temperature-max"		
+		Text item=GPUtemp	icon="temperature-max"				
+		Text item=cpuCombined	icon="line"					
+		Text item=openhabCpuPercent	icon="line"	
+		Text item=memFreePercent	icon="phone"
+		Text item=ChartPeriodName
+		Switch	item=ChartPeriod	label="Период"	mappings=[0="12 часов", 1="3 дня", 2="2 недели", 3="4 месяца"]
+		Chart item=System period=12h refresh=30000 visibility=[ChartPeriod==0, ChartPeriod=="Uninitialized"]
+		Chart item=System period=3D refresh=60000 visibility=[ChartPeriod==1]
+		Chart item=System period=2W refresh=60000 visibility=[ChartPeriod==2]	
+		Chart item=System period=4M refresh=60000 visibility=[ChartPeriod==3]		
+		}
+	Text item=MikroTik_Wireless_Clients icon="phone" { 
+		Text item=MikroTik_interface_bytes_out_transmit icon="network-on"	
+		Text item=MikroTik_interface_bytes_in_receive icon="network-off"
+		Text item=ChartPeriodName
+		Switch	item=ChartPeriod	label="Период"	mappings=[0="12 часов", 1="3 дня", 2="2 недели", 3="4 месяца"]
+		Chart item=MikroTik period=12h refresh=30000 visibility=[ChartPeriod==0, ChartPeriod=="Uninitialized"]
+		Chart item=MikroTik period=3D refresh=60000 visibility=[ChartPeriod==1]
+		Chart item=MikroTik period=2W refresh=60000 visibility=[ChartPeriod==2]	
+		Chart item=MikroTik period=4M refresh=60000 visibility=[ChartPeriod==3]			
+		Text item=ChartPeriodName
+		Chart item=MikroTik_Wireless_Clients period=12h refresh=30000 visibility=[ChartPeriod==0, ChartPeriod=="Uninitialized"]
+		Chart item=MikroTik_Wireless_Clients period=3D refresh=60000 visibility=[ChartPeriod==1]
+		Chart item=MikroTik_Wireless_Clients period=2W refresh=60000 visibility=[ChartPeriod==2]	
+		Chart item=MikroTik_Wireless_Clients period=4M refresh=60000 visibility=[ChartPeriod==3]			
+		}
+	Text item=Network icon="network-on" {
+		Text item=LAN_MikroTik icon="network"
+		Text item=LAN_MegaD328 icon="network"
+		Text item=LAN_Beward icon="network"
+		Text item=LAN_Sonoff_corridor icon="chart"
+		Text item=ChartPeriodName 
+		Switch	item=ChartPeriod	label="Период"	mappings=[0="12 часов", 1="3 дня", 2="2 недели", 3="4 месяца"]		
+		Chart item=LAN period=12h refresh=30000 visibility=[ChartPeriod==0, ChartPeriod=="Uninitialized"]
+		Chart item=LAN period=3D refresh=60000 visibility=[ChartPeriod==1]
+		Chart item=LAN period=2W refresh=60000 visibility=[ChartPeriod==2]	
+		Chart item=LAN period=4M refresh=60000 visibility=[ChartPeriod==3]		
+		Chart item=LAN_Sonoff_corridor period=12h refresh=30000 visibility=[ChartPeriod==0, ChartPeriod=="Uninitialized"]
+		Chart item=LAN_Sonoff_corridor period=3D refresh=60000 visibility=[ChartPeriod==1]
+		Chart item=LAN_Sonoff_corridor period=2W refresh=60000 visibility=[ChartPeriod==2]	
+		Chart item=LAN_Sonoff_corridor period=4M refresh=60000 visibility=[ChartPeriod==3]				
+		Text item=WAN_yaru icon="network-on"
+		Text item=WAN_pastryartru icon="network-on"
+		Text item=ChartPeriodName
+		Chart item=WAN period=12h refresh=30000 visibility=[ChartPeriod==0, ChartPeriod=="Uninitialized"]
+		Chart item=WAN period=3D refresh=60000 visibility=[ChartPeriod==1]
+		Chart item=WAN period=2W refresh=60000 visibility=[ChartPeriod==2]	
+		Chart item=WAN period=4M refresh=60000 visibility=[ChartPeriod==3]
+		}						
+	Switch item=Ghost_Lights icon="parents"			
+	}			
+	
+}

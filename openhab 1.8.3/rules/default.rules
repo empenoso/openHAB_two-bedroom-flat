@@ -1,0 +1,491 @@
+import org.openhab.core.library.types.*
+import org.openhab.core.persistence.*
+import org.openhab.model.script.actions.*
+import org.joda.time.*
+import org.openhab.model.script.debug
+
+import java.lang.Math
+import java.util.Calendar
+import java.util.Date
+import java.util.TimeZone
+import java.text.SimpleDateFormat
+import java.util.List //https://github.com/openhab/openhab/wiki/Actions#mail-actions
+import java.util.Random
+
+/* =============================================================================================================== */ 
+/*
+// Начальная настройка показаний 
+rule "System started Counters"
+when
+   System started
+then
+	postUpdate(MercuryIncotex201KWh, 408.65)
+	postUpdate(CountWaterM3Cold, 36.318)
+	postUpdate(CountWaterM3Hot, 21.730)       
+
+	// Корректировка 21.08.2016 15.00
+	// Корректировка 22.08.2016 9.00 - не считались показания со вчерашнего дня
+	// Корректировка 03.09.2016 18.00 - перед вселением
+	// Корректировка 22.09.2016 - перестал считать тики в связи с постоянным зависанием, пользуюсь встроенным в 14-IN счетчиком
+	// Корректировка 28.10.2016 - заменил на малину 3, изменил правила
+	// Корректировка 25.12.2016 - отставание на 1 кВт
+	// Корректировка 25.12.2016 - отставание на 1 кВт
+	// Корректировка 25.12.2016 - после зависания меги
+end 
+*/
+/* =============================================================================================================== */
+/* =============================================================================================================== */
+/* =============================================================================================================== */ 
+//подсчет кВт*ч эл. счетчика через счетчик порта MegaD 
+
+rule "MercuryIncotex201KWh"
+when
+   Item P6_CountElecImp changed
+then
+   var Number Imp = P6_CountElecImp.state as DecimalType
+   var Number KWh = MercuryIncotex201KWh.state as DecimalType
+   
+   if ( Imp >= 320 )	
+   		{
+	    //KWh = KWh + 0.1 // 1 кВт*ч - 3200 импульсов
+	    KWh = KWh + Imp/3200 // 1 кВт*ч - 3200 импульсов
+		postUpdate(MercuryIncotex201KWh, KWh)
+		sendHttpGetRequest("http://192.168.88.72/sec/?pt=6&cnt=0")
+		}
+end
+
+rule "MercuryIncotex201KWh_Past"
+when
+	Time cron "0 0/5 * * * ?" //каждые 5 минут
+then
+   var Number KWh = MercuryIncotex201KWh.state as DecimalType
+   var Number Kal
+   var Number Dif
+   var Number Pri
+   
+	if (MercuryIncotex201KWh.state instanceof DecimalType) {
+        Kal = MercuryIncotex201KWh.minimumSince(now.toDateMidnight.withDayOfMonth(1)).state as DecimalType //на начало месяца
+        //Kal = (MercuryIncotex201KWh.minimumSince(now.toDateMidnight.withDayOfMonth(1).withMonthOfYear(1), "rrd4j").state as DecimalType) //на начало года  //https://knx-user-forum.de/forum/supportforen/openhab/33557-anf%C3%A4nger
+	    postUpdate(MercuryIncotex201KWh_Kalends, Kal.doubleValue )
+       	Dif = KWh - Kal
+       	postUpdate(MercuryIncotex201KWh_Consumption, Dif.doubleValue )
+       	Pri = Dif * 3.62 //3,62 рубля за кВт*ч
+       	postUpdate(MercuryIncotex201KWh_Consumption_Price, Pri.doubleValue )
+ 	   }
+
+	val CropDigital1 = String::format("%.2f", KWh.doubleValue ) //формат строки для sitemap
+	val CropDigital2 = String::format("%.2f", Dif.doubleValue ) //формат строки для sitemap	
+	postUpdate(MercuryIncotex201KWh_general, CropDigital1 + " (" + CropDigital2 + " в тек.мес.)" )	   
+end
+
+/* =============================================================================================================== */
+//подсчет показаний хол. воды
+rule "CountWaterImpCold"
+when
+   Item P10_WaterPulse_cold changed to ON //received update ON   
+then
+	var Number WatCold = CountWaterM3Cold.state as DecimalType
+	var Number tmp1
+	var Number Kal1
+	var Number Dif1
+   
+	tmp1 = WatCold + 0.01 // один полный импульс при прохождении 10 л жидкости 
+	postUpdate(CountWaterM3Cold, tmp1.doubleValue)
+	
+	if (CountWaterM3Cold.state instanceof DecimalType) {
+        Kal1 = CountWaterM3Cold.minimumSince(now.toDateMidnight.withDayOfMonth(1)).state as DecimalType //на начало месяца
+	    postUpdate(CountWaterM3Cold_Kalends, Kal1.doubleValue )
+       	Dif1 = tmp1 - Kal1
+       	postUpdate(CountWaterM3Cold_Consumption, Dif1.doubleValue )
+    	}    	
+end
+
+//подсчет показаний гор. воды
+rule "CountWaterImpHot"
+when
+   Item P11_WaterPulse_hot changed to ON //received update ON 
+then
+	var Number WatHot = CountWaterM3Hot.state as DecimalType
+	var Number tmp2
+	var Number Kal2
+	var Number Dif2
+   
+	tmp2 = WatHot + 0.01 // один полный импульс при прохождении 10 л жидкости 
+	postUpdate(CountWaterM3Hot, tmp2.doubleValue)
+	
+	if (CountWaterM3Hot.state instanceof DecimalType) {
+        Kal2 = CountWaterM3Hot.minimumSince(now.toDateMidnight.withDayOfMonth(1)).state as DecimalType //на начало месяца
+	    postUpdate(CountWaterM3Hot_Kalends, Kal2.doubleValue )
+       	Dif2 = tmp2 - Kal2
+       	postUpdate(CountWaterM3Hot_Consumption, Dif2.doubleValue )
+    	}	
+end
+
+//отображение воды в sitemap
+rule "WaterSitemap"
+when
+	Time cron "0 0/30 * * * ?" //каждые 30 минут
+then
+	val CropDigital3 = String::format("%.2f", (CountWaterM3Cold.state as DecimalType).doubleValue )
+	val CropDigital4 = String::format("%.2f", (CountWaterM3Cold_Consumption.state as DecimalType).doubleValue )
+	postUpdate(CountWaterM3Cold_general, CropDigital3 + " (" + CropDigital4 + " в тек.мес.)" )	    
+	
+	val CropDigital5 = String::format("%.2f", (CountWaterM3Hot.state as DecimalType).doubleValue )
+	val CropDigital6 = String::format("%.2f", (CountWaterM3Hot_Consumption.state as DecimalType).doubleValue )
+	postUpdate(CountWaterM3Hot_general, CropDigital5 + " (" + CropDigital6 + " в тек.мес.)" )	
+end
+
+/* =============================================================================================================== */
+//Мин/макс значение хол/гор трубы в месяце 
+rule "Pipes max min"
+when
+    Time cron "0 30 04 ? * MON,WED,FRI,SUN" //http://www.quartz-scheduler.org/documentation/quartz-2.1.x/tutorials/tutorial-lesson-06
+then
+	var Number cold = P7_DS18B20_WC_cold.state as DecimalType
+	var Number hot = P8_DS18B20_WC_hot.state as DecimalType
+	var Number bedroom = P13_DS18B20_bedroom.state as DecimalType
+	
+	if (P7_DS18B20_WC_cold.state instanceof DecimalType) {
+		cold = P7_DS18B20_WC_cold.minimumSince(now.toDateMidnight.withDayOfMonth(1)).state as DecimalType //с начала месяца
+		hot = P8_DS18B20_WC_hot.maximumSince(now.toDateMidnight.withDayOfMonth(1)).state as DecimalType //с начала месяца
+		bedroom = ( (P13_DS18B20_bedroom.minimumSince(now.toDateMidnight.withDayOfMonth(1)).state as DecimalType) + (P13_DS18B20_bedroom.maximumSince(now.toDateMidnight.withDayOfMonth(1)).state as DecimalType) ) / 2 //averageSince не работает
+		postUpdate(P7_DS18B20_WC_cold_min, cold.doubleValue )
+		postUpdate(P8_DS18B20_WC_hot_max, hot.doubleValue )
+		postUpdate(P13_DS18B20_bedroom_avg, bedroom.doubleValue )
+		} 
+end
+/* =============================================================================================================== */
+// пересчет Volume adjustment в децибелы
+
+rule "USB_Maximum_amplitude"  
+when  
+	Item USB_Maximum_amplitude received update
+then  
+	var Number Vol = USB_Maximum_amplitude.state as DecimalType
+	Vol = 4000*Vol
+	
+	if ( Vol > 120) {	
+		postUpdate(USB_Maximum_amplitude_dB, 120) //не может быть больше 120 дБ		
+		}	else {
+	postUpdate(USB_Maximum_amplitude_dB, Vol.doubleValue) //Настоящее значение 	
+	}		
+end  
+
+/* =============================================================================================================== */
+
+// перезагрузка камеры Beward B2710DR по расписанию //https://community.openhab.org/t/delay-in-rule/3237/25
+
+rule "Beward reset"
+when
+    Time cron "0 30 05 ? * MON,WED,FRI,SUN" //http://www.quartz-scheduler.org/documentation/quartz-2.1.x/tutorials/tutorial-lesson-06
+then
+	sendCommand(P12, ON)
+	Thread::sleep(60000)
+	sendCommand(P12, OFF)
+end
+
+/* =============================================================================================================== */
+
+//on and off в цифры для графика. 
+//https://community.openhab.org/t/measuring-time-of-switch-state/2542/5 
+//https://groups.google.com/forum/#!topic/openhab/OYJvswXhbY8
+ 
+rule "P9 Door closed" //ON=закрыта
+when
+    Item P9_Door changed to ON     
+then
+	postUpdate(P9_last_use, new DateTimeType() )
+	postUpdate(P9_Door_state,  "закрыта")	
+	postUpdate(P9_Door_number, 1)
+end
+
+rule "P9 Door open" //OFF=открыта
+when
+    Item P9_Door changed to OFF
+then
+	var Number RunStart 
+	RunStart = now.millis
+	postUpdate(P9_DoorRunStart, RunStart.doubleValue ) // Timestamp when the switch was turned off	
+	postUpdate(P9_last_use, new DateTimeType() )
+	postUpdate(P9_Door_state,  "открыта" )
+	postUpdate(P9_Door_number, 0)	
+end
+
+rule "P9_last_use_ago" 
+when
+    Time cron "0 0/5 * * * ?" //каждые 5 мин
+then
+	var Number RunStart = P9_DoorRunStart.state as DecimalType
+	var Number DoorTime
+	var Number RunEnd
+	RunEnd = now.millis
+ 	if (P9_Door.state==ON) {
+	DoorTime = (RunEnd - RunStart) / 3600000 //миллисекунды в часы
+	postUpdate(P9_last_use_ago, DoorTime.doubleValue)
+	
+	val CropDigital = String::format("%.2f", DoorTime.doubleValue ) //формат строки для sitemap
+	postUpdate(P9_Door_state_general, P9_Door_state.state + " (" + CropDigital + " ч)" )	
+	}	
+	/*postUpdate(P9_Door, OFF)
+	Thread::sleep(60000)
+	postUpdate(P9_Door, ON)*/			
+end
+
+/* =============================================================================================================== */
+
+//дата и время для отображения
+rule "dateTime from rules"
+when
+    Time cron "0 0/1 * * * ?" //каждую минуту
+then
+	var String DateTimeStampInitial = String::format( "%1$tA, %1$td.%1$tm.%1$tY, %1$tR", new Date() ) //https://community.openhab.org/t/how-to-convert-and-format-a-datetime-item-in-a-rule/6094/5
+	postUpdate(dateTime, DateTimeStampInitial )
+end
+
+/* =============================================================================================================== */
+
+//доступность оборудования
+rule "device ping"
+when
+    Time cron "0 0/15 * * * ?" //каждые 15 минут
+then
+	var Number MikroT = LAN_MikroTik.state as DecimalType
+	var Number MegaD328 = LAN_MegaD328.state as DecimalType
+	var Number Beward = LAN_Beward.state as DecimalType
+	//var Number yaru = WAN_yaru.state as DecimalType
+	//var Number pastryartru = WAN_pastryartru.state as DecimalType	
+	if (MikroT!=0 && MegaD328!=0 && Beward!=0) {	
+	postUpdate(Network, "OK")
+	}
+		else {
+			postUpdate(Network, "problem")
+		}
+	/*if (Network==0 || Network==null) {	
+	postUpdate(Network, "опрос")
+	}*/
+end
+
+/* ================================================================================================================ */
+rule "openHAB report"
+when
+	//System started 
+    Time cron "0 30 7 ? * WED"
+    or Time cron "0 30 6 L-15 * ?"
+    or Time cron "0 30 6 L-3 * ?"	//http://www.quartz-scheduler.org/documentation/quartz-2.1.x/tutorials/tutorial-lesson-06
+then
+	val String DateTimeStamp = String::format( "%1$tm.%1$tY", new Date() )
+	val message1 = "xxx xxx xxx\n\nкв. xxx за " + DateTimeStamp + "\n\n"
+	val message2 = "Холодная вода:\nХВС расход в тек.мес.: " + CountWaterM3Cold_Consumption.state.format("%.2f") + " м. куб.\nТекущие показания: " + CountWaterM3Cold.state.format("%.2f") + " м. куб.\n" + "Показания хол. на 1е число: " + CountWaterM3Cold_Kalends.state.format("%.2f") + " м. куб.\n\n"
+	val message3 = "Горячая вода:\nГВС расход в тек.мес.: " + CountWaterM3Hot_Consumption.state.format("%.2f") + " м. куб.\nТекущие показания: " + CountWaterM3Hot.state.format("%.2f") + " м. куб.\n" + "Показания гор. на 1е число: " + CountWaterM3Hot_Kalends.state.format("%.2f") + " м. куб.\n\n"
+	val message4 = "Электроэнергия:\nЭ/э расход в тек.мес.: " + MercuryIncotex201KWh_Consumption.state.format("%.2f") + " кВт*ч\nТекущие показания: " + MercuryIncotex201KWh.state.format("%.2f") + " кВт*ч\n" + "Показания э/э на 1е число: " + MercuryIncotex201KWh_Kalends.state.format("%.2f") + " кВт*ч\n\n"
+	val message5 = "Температура воды в трубах:\nМин. значение хол. трубы в месяце: " + P7_DS18B20_WC_cold_min.state.format("%.2f") + "°С\nМакс. значение гор. трубы в месяце: " + P8_DS18B20_WC_hot_max.state.format("%.2f") + "°С\nСредняя темп. батарей в месяце: " + P13_DS18B20_bedroom_avg.state.format("%.2f") + "°С\n\n"
+	val message6 = "Отчет сформирован в " + dateTime.state + " через openHAB.\n"
+
+	val List<String> attachmentUrlList = newArrayList(
+	"file:///tmp/chart1.jpg",
+	"file:///tmp/chart2.jpg",
+	"file:///tmp/chart3.jpg")
+
+	sendMail("xxxxx@xxxx.com", "openHAB report", message1+message2+message3+message4+message5+message6, attachmentUrlList)
+end
+
+/* ================================================================================================================ */
+// https://community.openhab.org/t/vacation-simulation/8246/4
+
+rule "Randomly turn on & off lights between 07.00-23.00 if before or after sunset and if alarm is activated"
+	when
+		Time cron "0 */9 7-23 * * ?"		
+	then
+		var Number Illumination = P3_TEMT6000.state as DecimalType
+		var Number LAN_Sonoff_Cor = LAN_Sonoff_corridor.state as DecimalType
+		var Timer tRandomLights		
+		if (Illumination < 720 && Ghost_Lights.state == ON && LAN_Sonoff_Cor > 1 ) { // OR - ||; AND - &&
+
+			// Only turn a light on/off ocasionally
+		 	if ((new java.util.Random).nextInt(2) == 1) { 
+		 	
+		 		// Create a timer with a random value
+				var int randomTime = (new java.util.Random).nextInt(300)	//интервал в секундах
+				logInfo("org.openhab","Ghost. Setting random lights timer to " + randomTime.toString + " seconds.")
+/*tRandomLights = createTimer(now.plusMinutes(randomTime)) [|
+Lights_Random.members.forEach(Lights_Random|
+sendCommand(Lights_Random, if(Math::random > 0.6) OFF else ON))
+]*/
+				tRandomLights = createTimer(now.plusSeconds(randomTime)) [|
+					var randLightIndex = (new java.util.Random).nextInt(Lights_Random.members.size)
+			 		var randLightStateCurrent = Lights_Random.members.get(randLightIndex).state
+			 		var randLightStateNew = if (randLightStateCurrent == ON) OFF else ON
+			 		logInfo("org.openhab","Ghost. Switching light " + Lights_Random.members.get(randLightIndex).name.toString + " from " + randLightStateCurrent.toString + " to " + randLightStateNew.toString)
+			 		sendCommand(Lights_Random.members.get(randLightIndex), randLightStateNew)
+		        ]
+
+			}
+		}
+end
+
+rule "Turn all lights off at 23.10 if alarm is activated"
+	when
+		Time cron "0 20 23 * * ?"
+	then
+		var Number LAN_Sonoff_Cor = LAN_Sonoff_corridor.state as DecimalType
+		if (Ghost_Lights.state == ON && LAN_Sonoff_Cor > 1) {
+		logInfo("org.openhab","Turning all the random lights off.")
+		sendCommand(Lights_Random, OFF)
+		}
+end
+
+/* ================================================================================================================ */
+/* =======================			НЕ ИСПОЛЬЗУЮТСЯ					=============================================== */
+/* ================================================================================================================ */
+
+/* =============================================================================================================== */ 
+
+//подсчет кВт*ч эл. счетчика через счетчик порта MegaD http://ab-log.ru/forum/viewtopic.php?f=1&t=1004&start=360#p23620
+/*
+rule "Power calculation"
+	when
+		Item P6_CountElecImp received update
+	then
+	if((P6_CountElecImp_Previous.state == Undefined) || (P6_CountElecImp_Previous.state == Uninitialized)){
+		postUpdate(P6_CountElecImp_Previous, 0) // если переменная новая - сначала ее инициализируем
+	}
+	if((MercuryIncotex201KWh_Current.state == Undefined) || (MercuryIncotex201KWh_Current.state == Uninitialized)){
+		postUpdate(MercuryIncotex201KWh_Current, 0) 
+	}
+
+	var delta = (P6_CountElecImp.state as DecimalType) - (P6_CountElecImp_Previous.state as DecimalType) // считаем дельту тиков
+	var Number KWh = MercuryIncotex201KWh.state as DecimalType
+	var Number KWh_Current
+	
+	if (delta > 0) {
+		KWh_Current = delta * 0.0003125		// 1 кВт*ч - 3200 импульсов
+		KWh = KWh + KWh_Current 
+		postUpdate(MercuryIncotex201KWh_Current, KWh_Current.doubleValue )  
+		postUpdate(MercuryIncotex201KWh, KWh.doubleValue)				
+    }	
+	logInfo("Delta impuls = ", delta.toString) //пишем в лог циферки, если надо (logInfo пишет и без режима отладки)
+	//logInfo("P6_CountElecImp: ", P6_CountElecImp.state.toString) 
+	//logInfo("P6_CountElecImp_Previous value: ", P6_CountElecImp_Previous.state.toString) 
+	//logInfo("MercuryIncotex201KWh_Current value: ", MercuryIncotex201KWh_Current.state.toString) 
+	if(P6_CountElecImp.state > 600){   //обнуляем счетчик меги, если число больше заданного
+		sendHttpGetRequest("http://192.168.88.72/sec/?pt=6&cnt=0") // http://www.ab-log.ru/smart-house/ethernet/megad-328-api
+		postUpdate(P6_CountElecImp_Previous, 0) //теперь начинаем сказку с начала
+	} 	else {
+			postUpdate(P6_CountElecImp_Previous, P6_CountElecImp.state) //отработали текущее значение, теперь оно предыдущее
+		}
+	
+end
+
+rule "Update MercuryIncotex201KWh_Daily"
+when
+    Item  MercuryIncotex201KWh_Current received update
+then
+    var Number Sum
+    if (MercuryIncotex201KWh_Current.state instanceof DecimalType) {
+        Sum = MercuryIncotex201KWh_Current.sumSince( now.minusHours(24), "rrd4j")
+        postUpdate(MercuryIncotex201KWh_Daily, Sum.doubleValue )   
+    }
+end
+*/
+
+/*примеры счетчиков:
+http://www.ab-log.ru/forum/viewtopic.php?f=1&t=1004&start=260#p22599
+http://www.instructables.com/id/Uber-Home-Automation-w-Arduino-Pi/step8/Uber-Sensor-Dog-Bark-Noise-Sensor/
+*/
+
+/* подсчет кВт*ч эл. счетчика через импульсы порта - обработка импульсов вызывает зависание openhab ещё до правил
+rule "InputImp ON"
+when
+   Item P6_EnergyPulse received update ON
+then
+   var Number Imp = CountElecKWh.state as DecimalType
+   Imp = Imp + 0.0003125 // 1 кВт*ч - 3200 импульсов
+   postUpdate(CountElecKWh, Imp.doubleValue)
+end
+*/
+/* ================================================================================================================ */
+/* подсчет импульсов эл. счетчика - старый
+rule "InputImp ON"
+when
+   Item P6_EnergyPulse changed to ON
+then
+   var Number Imp = CountElecImp.state as DecimalType
+   Imp = Imp + 1
+   postUpdate(CountElecImp, Imp)
+end
+
+rule "CountElecKWh +1"
+when
+   Item CountElecImp changed
+then
+   var Number Imp = CountElecImp.state as DecimalType
+   var Number KWh = CountElecKWh.state as DecimalType
+   if ( Imp == 3200 )	{
+    Imp = 0
+    KWh = KWh + 1 
+	postUpdate(CountElecImp, Imp)
+    postUpdate(CountElecKWh, KWh)
+	}
+end
+*/
+/* ================================================================================================================ */
+//ошибка отображения нуля вместо влажности
+/*
+rule "Mega DHT Temp/Hum Parser"
+when 
+    Item P2_DHT22 received update
+then
+    val parse = P2_DHT22.state.toString.split("/")
+    val parsedtemperature = parse.get(0)
+    val parsedhumidity = parse.get(1)
+    var temperature = new Double(parsedtemperature)
+    var humidity = new Double(parsedhumidity)
+    postUpdate(P2_DHT22_temp, temperature)
+    postUpdate(P2_DHT22_hum, humidity)
+end
+*/
+/* ================================================================================================================ */
+/* пересчет показаний порта - процент от макимума
+rule "P1_NoiseTroyka"  
+when  
+	Item P1_NoiseTroyka received update
+then  
+	postUpdate(NoiseTroyka_dB, ((P1_NoiseTroyka.state as DecimalType)*100/1023).doubleValue)
+end  
+*/
+/* =============================================================================================================== */
+//How to display the minimum and maximum values of an item in a given period  https://github.com/openhab/openhab/wiki/Samples-Rules 
+/*
+rule "Update Temperature Min- and Max values"
+when
+    Item  P2_DS18B20 received update
+then
+    var Number Min
+    var Number Max
+    var String tmp
+    var SimpleDateFormat df = new SimpleDateFormat( "HH:mm" ) 
+
+    if (P2_DS18B20.state instanceof DecimalType) {
+        Min = (P2_DS18B20.minimumSince(now.toDateMidnight, "rrd4j").state as DecimalType)
+        tmp = (Math::round(Min.floatValue*10.0)/10.0) + "°C (" + df.format(P2_DS18B20.minimumSince(now.toDateMidnight, "rrd4j").timestamp) + ")"
+        postUpdate(P2_DS18B20_Min, tmp)
+
+        Max = P2_DS18B20.maximumSince(now.toDateMidnight, "rrd4j").state as DecimalType
+        df = new SimpleDateFormat( "HH:mm" ) 
+        tmp = (Math::round(Max.floatValue*10.0)/10.0) + "°C (" + df.format(P2_DS18B20.maximumSince(now.toDateMidnight, "rrd4j").timestamp) + ")"
+        postUpdate(P2_DS18B20_Max, tmp)
+    }
+end
+*/
+/* =============================================================================================================== */
+/*
+// пересчет освещенности - процент от макимума
+rule "P3_TEMT6000"  
+when  
+	Item P3_TEMT6000 received update
+then  
+	postUpdate(P3_TEMT6000_percent, ((P3_TEMT6000.state as DecimalType)*100/1023).doubleValue)
+end  
+*/
+/* =============================================================================================================== */
+
