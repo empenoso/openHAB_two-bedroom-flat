@@ -1,0 +1,137 @@
+Group Entrance			<corridor>
+Group Living_room		<sofa>
+Group Kitchen			<cinema>
+Group Restroom			<faucet>
+Group Bedroom			<bedroom>
+Group Outside			
+
+String	Entrance_st		"Прихожая/Подъезд"	<corridor>
+String	Living_room_st	"Гостиная"			<sofa>
+String	Kitchen_st		"Кухня"				<cinema>
+String	Restroom_st		"Туалет/Ванна"		<faucet>
+String	Bedroom_st		"Спальня"			<bedroom>
+String	Outside_st		"Улица"				
+
+Number	ChartPeriod		"Интервал"		<flow>	//<flow> - иконка
+String	ChartPeriodName	"Графики"       <line>
+
+//==============================================================================================================
+Group	Lights_Random
+Group:Switch:OR(ON, OFF)	Lamp "Управление освещением [(%d)]"                 <light>         (Lights_Random) 
+Switch	Ghost_Lights		"Имитация присутствия, свет"						<parents_1_1>	(Entrance)
+
+Switch	ElectroDragon1_WC			"Лампа туалет [%s]"							<light>     (Lamp, Restroom)					{ mqtt=">[mosquitto:cmnd/ElectroDragon1/POWER1:command:*:default], <[mosquitto:stat/ElectroDragon1/POWER1:state:default]" }     // настройка в файле \openHAB-conf\services\mqtt.cfg, mosquitto.url=tcp://localhost:1883
+Switch	ElectroDragon1_Corridor		"Лампа коридор [%s]"						<light>     (Lamp, Lights_Random, Restroom)		{ mqtt=">[mosquitto:cmnd/ElectroDragon1/POWER2:command:*:default], <[mosquitto:stat/ElectroDragon1/POWER2:state:default]" }
+Switch	Sonoff_Camera12v        	"Камера подъезд [%s]"						<camera>    (Entrance)	                     	{ mqtt=">[mosquitto:cmnd/Camera12v/POWER1:command:*:default], <[mosquitto:stat/Camera12v/POWER1:state:default]" }
+Switch	ElectroDragon2_Bath			"Лампа ванна [%s]"							<light>	    (Lamp, Restroom)					{ mqtt=">[mosquitto:cmnd/ElectroDragon2/POWER1:command:*:default], <[mosquitto:stat/ElectroDragon2/POWER1:state:default]" }
+Switch	ElectroDragon2_Kitchen		"Люстра кухня [%s]" 						<light>	    (Lamp, Lights_Random, Kitchen)		{ mqtt=">[mosquitto:cmnd/ElectroDragon2/POWER2:command:*:default], <[mosquitto:stat/ElectroDragon2/POWER2:state:default]" }
+Switch	Sonoff_Table_lamp			"Лампа настольная в спальне [%s]"	    	<light> 	(Lamp, Lights_Random, Bedroom)     	{ mqtt=">[mosquitto:cmnd/Table_lamp/POWER:command:*:default], <[mosquitto:stat/Table_lamp/POWER:state:default]" }
+Switch	ElectroDragon3_Bedroom	    "Люстра в спальне [%s]"						<light>	    (Lamp, Bedroom)				    	{ mqtt=">[mosquitto:cmnd/ElectroDragon3/POWER1:command:*:default], <[mosquitto:stat/ElectroDragon3/POWER1:state:default]" }
+Switch	ElectroDragon3_Boxroom		"Лампа кладовка [%s]" 						<light>	    (Lamp, Bedroom)             		{ mqtt=">[mosquitto:cmnd/ElectroDragon3/POWER2:command:*:default], <[mosquitto:stat/ElectroDragon3/POWER2:state:default]" }
+Switch	Sonoff_Living_room			"Люстра гостиная [%s]"				    	<light>	    (Lamp, Lights_Random, Living_room)	{ mqtt=">[mosquitto:cmnd/Living_room/POWER:command:*:default], <[mosquitto:stat/Living_room/POWER:state:default]" }
+Number  WaterOverlap                "Перекрытие воды"                           <faucet>
+
+//==============================================================================================================
+
+Number P36_XP5_ADC                  "Noise [%.2f °C]"	                                            { http="<[http://192.168.88.60/sec/?pt=36&cmd=get:60000:REGEX((.*?))]" }	
+Number P36_XP5_ADC_dB               "Noise [%.2f °C]"	
+String USB_Maximum_amplitude		"USB Maximum amplitude [%s]"	<line>			               	{channel="exec:command:USB_Maximum_amplitude:output"}
+Number USB_Maximum_amplitude_dB		"Датчик шума USB, [%.2f]"		<line>	    (Entrance) 	
+
+
+Number P1_HTU21D_Temp       "Темп. на улице [%.2f °C]"	       <temperature>	 (Pipes)    { http="<[http://192.168.88.60/sec/?pt=0&scl=1&i2c_dev=htu21d&i2c_par=1:60000:REGEX((.*?))]" }	
+Number P1_HTU21D_Hum        "Влажность на улице [%.2f %%]"     <humidity>                   { http="<[http://192.168.88.60/sec/?pt=0&scl=1&i2c_dev=htu21d:60000:REGEX((.*?))]" }	
+Number P1_MAX44009	    	"Освещ. улицы [%.2f lux]"          <sunrise>		            { http="<[http://192.168.88.60/sec/?pt=0&scl=1&i2c_dev=max44009:60000:REGEX((.*?))]" }	
+
+Switch	P2_ALL	             "ВЫКЛ всё [%s]"	                 { mqtt="<[mosquitto:megad/60/2:state:JSONPATH($.value)]" }     //{channel ="megad:device:14in:P2_ALL:in"}
+//Switch	P2_ALL_hold          "ВКЛ всё [%s]"	                     { mqtt="<[mosquitto:megad/60/10:state:JSONPATH($.[?(@.m=='0')].value)]" }
+Switch 	P4_Domofon	         "Домофон [%s]"		(Entrance)	     { mqtt="<[mosquitto:megad/60/4:state:JSONPATH($.value)]" } //{channel ="megad:device:14in:P4_Domofon:in"}
+
+String  P3_SSD1306_Text             "Дисплей SSD1306 Text [%s]"         { http=">[*:GET:http://192.168.88.60/sec/?pt=3&text=%2$s]" }
+String  P3_SSD1306_SmallText        "Дисплей SSD1306 SmallText [%s]"    { http=">[*:GET:http://192.168.88.60/sec/?pt=3&text=%2$s&col=30&row=0]" }
+
+Switch   	P5_Door						"Дверь [MAP(door.map):%s]"	    		{ mqtt="<[mosquitto:megad/60/5:state:JSONPATH($.value)]" } //{channel ="megad:device:14in:P5_Door:contact"}
+String 		P5_Door_state				"Дверь [%s]"
+String 		P5_Door_state_general		"Дверь [%s]"	    	<door>			(Entrance)
+DateTime	P5_last_use					"Door, last use [%1$td.%1$tm, %1$tR]"
+Number 		P5_DoorRunStart 			"P5_DoorRunStart [%s]"	
+Number		P5_last_use_ago				"Door, last use, h. ago [%.2f]"
+
+Group:Number:AVG Pipes          	"Температура отопления [%.2f °C]"               <temperature>       (Pipes) 
+Number P6_DS18B20_WC_cold			"Темп. хол. трубы, °C [%.2f]"   	        	<temperature_cold>	(Pipes)	  { http="<[http://192.168.88.60/sec/?pt=6&cmd=list:60000:REGEX(.*?961b01000080:(.*?))]" }	
+Number P6_DS18B20_WC_cold_min		"Мин. значение хол. трубы в месяце, °C [%.2f]"
+Number P6_DS18B20_WC_hot			"Темп. гор. трубы, °C [%.2f]"		            <temperature_hot>	(Pipes)	  { http="<[http://192.168.88.60/sec/?pt=6&cmd=list:60000:REGEX(.*?141201000080:(.*?);(.*))]" }	
+Number P6_DS18B20_WC_hot_max		"Макс. значение гор. трубы в месяце, °C [%.2f]"
+
+Group:Number:AVG Indoor         "Температура в комнатах [%.2f °C]"       <temperature>  (Indoor) 
+Number P7_DS18B20_Kitchen		"Темп. кухня [%.2f °C]" 		         <temperature>  (Kitchen, Indoor)			{ http="<[http://192.168.88.60/sec/?pt=7&cmd=list:60000:REGEX(.*?ff4902731604:(?!85)(.*?);(.*))]" }	
+Number P7_DS18B20_livingroom	"Темп. гостиная [%.2f °C]"	             <temperature>	(Living_room, Indoor)		{ http="<[http://192.168.88.60/sec/?pt=7&cmd=list:60000:REGEX(.*?ff04f2711605:(?!85)(.*?);(.*))]" }	
+Number P7_DS18B20_Heat_bedroom	"Темп. бат. спальни [%.2f °C]"           <radiator>   	(Pipes)	                	{ http="<[http://192.168.88.60/sec/?pt=7&cmd=list:60000:REGEX(.*?fff9b7731604:(?!85)(.*?))]" }	
+Number P7_DS18B20_bedroom_avg	"Средняя темп. батареи в месяце [%.2f °C]"
+
+Group   Counters                    	"Приборы учета"                                 <office>       (Counters) 
+Group	WaterCold 
+String	CountWaterCold					"Холодная вода: "
+Switch	P8_WaterPulse_cold				"Холодная, счетчик Valtec VLF-R-IL [%s]"          { mqtt="<[mosquitto:megad/60/8:state:JSONPATH($.value)]" } //{channel ="megad:device:14in:P8_WaterPulse_cold:in"}
+Number	CountWaterM3Cold				"ХВС Valtec VLF-R-IL, м. куб. [%.2f]"	    	<humidity>		(Counters)
+String	CountWaterM3Cold_general		"Холодная Valtec, м. куб. [%s]"					<office>
+Number	CountWaterM3Cold_Kalends		"ХВС на 1е число, м. куб. [%.2f]"		    	<water>		    (Counters)
+Number	CountWaterM3Cold_Consumption	"ХВС расход в тек.мес., м. куб. [%.2f]"			<humidity>		(Counters)
+
+Group	WaterHot 
+String	CountWaterHot					"Горячая вода: "
+Switch	P9_WaterPulse_hot				"Горячая, счетчик Valtec VLF-R-IL [%s]"           	{ mqtt="<[mosquitto:megad/60/9:state:JSONPATH($.value)]" } //{channel ="megad:device:14in:P9_WaterPulse_hot:in"}
+Number	CountWaterM3Hot					"ГВС Valtec VLF-R-IL, м. куб. [%.2f]"   		<humidity>		(Counters)
+String	CountWaterM3Hot_general			"Горячая Valtec, м. куб. [%s]"					<office>
+Number	CountWaterM3Hot_Kalends			"ГВС на 1е число, м. куб. [%.2f]"	    		<water>	    	(Counters)
+Number	CountWaterM3Hot_Consumption		"ГВС расход в тек.мес., м. куб. [%.2f]"			<humidity>		(Counters)
+
+Group Incotex201 	
+Number  P10_CountElecImp  	  					"Импульсы э/э, текущее значение (3200/кВт*ч) [%s]"       { mqtt="<[mosquitto:megad/60/10:state:JSONPATH($.cnt)]" } //{channel ="megad:device:14in:P10_CountElecImp:incount"}
+Number  MercuryIncotex201KWh   					"Э/э Меркурий 201.5, кВт*ч [%.2f]"		<energy>	   	
+String  MercuryIncotex201KWh_general  			"Э/э Меркурий 201.5, кВт*ч [%s]"		<office>		(Counters)			
+Number  MercuryIncotex201KWh_Kalends			"Э/э на начало месяца, кВт*ч [%.2f]"	<energy>		(Counters)
+Number  MercuryIncotex201KWh_Consumption		"Э/э расход в тек.месяце, кВт*ч [%.2f]"	<line>			(Counters)
+Number  MercuryIncotex201KWh_Consumption_Price	"Э/э по 3,62 в тек.месяце, руб. [%.2f]"	<pie>	
+
+//==============================================================================================================
+
+Group:Switch:OR(OFF, ON) 	Reachable "Недоступное оборудования [(%d)]"         <network>      (Reachable) 
+
+Switch	ElectroDragon1_Reachable		    	"ElectroDragon1 [%s]"           <network>	(Reachable)    { mqtt="<[mosquitto:tele/ElectroDragon1/LWT:state:MAP(tasmota.map)]" }
+Switch	Sonoff_Camera12v_Reachable            	"Sonoff SV_Камера подъезд [%s]"	<network>	(Reachable)    { mqtt="<[mosquitto:tele/Camera12v/LWT:state:MAP(tasmota.map)]" }
+Switch	ElectroDragon2_Reachable	    		"ElectroDragon2 [%s]"       	<network>	(Reachable)    { mqtt="<[mosquitto:tele/ElectroDragon2/LWT:state:MAP(tasmota.map)]" }
+Switch	Sonoff_Table_lamp_Reachable	    		"Sonoff лампа настольная [%s]"	<network>   (Reachable)    { mqtt="<[mosquitto:tele/Table_lamp/LWT:state:MAP(tasmota.map)]" }
+Switch	ElectroDragon3_Reachable	            "ElectroDragon3 [%s]"	        <network>	(Reachable)    { mqtt="<[mosquitto:tele/ElectroDragon3/LWT:state:MAP(tasmota.map)]" }
+Switch	Sonoff_Living_room_Reachable			"Sonoff люстра гостиная [%s]"	<network>	(Reachable)    { mqtt="<[mosquitto:tele/Living_room/LWT:state:MAP(tasmota.map)]" }
+
+Switch	LAN_MikroTik		"MikroTik hAP lite RB941-2nD-TC [%s]"	    <qualityofservice>	(Reachable)			{ channel="network:pingdevice:LAN_MikroTik:online" }
+Switch	LAN_MegaD2561		"MegaD-2561 + MegaD-14-IN [%s]"			    <qualityofservice>	(Reachable)			{ channel="network:pingdevice:LAN_MegaD2561:online" } 
+Switch	LAN_Beward			"Beward B2710DR [%s]"					    <qualityofservice>	(Reachable)			{ channel="network:pingdevice:LAN_Beward:online" }
+
+//==============================================================================================================
+
+DateTime dateTimeNTP			"Дата и время [%1$tA, %1$td.%1$tm.%1$tY, %1$tR]"    	<calendar>		{ channel="ntp:ntp:pool:dateTime" }  	 //расшифровка букв https://docs.oracle.com/javase/8/docs/api/java/util/Formatter.html
+String	dateTime				"Дата и время сервера [%s]"								<calendar>
+
+//==============================================================================================================
+
+Group   Systeminfo  "Информация сервера"         <screen>      (Systeminfo) 
+/* CPU information*/
+Number CPU_Load                   <line-stagnation>  (Systeminfo) { channel="systeminfo:computer:work:cpu#load"} 
+Number CPU_Threads                <line-stagnation>  (Systeminfo) { channel="systeminfo:computer:work:cpu#threads" }
+Number CPU_Uptime                 <line-stagnation>  (Systeminfo) { channel="systeminfo:computer:work:cpu#uptime" }
+
+/* Storage information*/
+Number Storage_Total               <line-stagnation>  (Systeminfo) { channel="systeminfo:computer:work:storage#total" }
+Number Storage_Available_Percent   <line-stagnation>  (Systeminfo) { channel="systeminfo:computer:work:storage#availablePercent" }
+
+/* Memory information*/
+Number Memory_Available            <line-stagnation>  (Systeminfo) { channel="systeminfo:computer:work:memory#available" }
+Number Memory_Available_Percent    <line-stagnation>  (Systeminfo) { channel="systeminfo:computer:work:memory#availablePercent" }
+
+/* Network information*/
+Number Network_DataSent          <line-stagnation>    (Systeminfo)   { channel="systeminfo:computer:work:network#dataSent" }
+Number Network_DataRecevied      <line-stagnation>    (Systeminfo)   { channel="systeminfo:computer:work:network#dataReceived" }
+
+//==============================================================================================================

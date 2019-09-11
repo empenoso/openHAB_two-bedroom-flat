@@ -1,0 +1,336 @@
+import org.openhab.core.library.types.*
+import org.openhab.core.persistence.*
+import org.openhab.model.script.actions.*
+import org.joda.time.*
+
+import java.lang.Math
+import java.util.Calendar
+import java.util.Date
+import java.util.TimeZone
+import java.text.SimpleDateFormat
+import java.util.List //https://github.com/openhab/openhab/wiki/Actions#mail-actions
+import java.util.Random
+
+import java.lang.Double.*
+import java.lang.String.*
+
+/* =============================================================================================================== */
+/*
+// Начальная настройка показаний 
+rule "System started Counters"
+when
+   System started
+then
+	postUpdate(MercuryIncotex201KWh, 1656.25)
+	postUpdate(CountWaterM3Cold, 98.772)
+	postUpdate(CountWaterM3Hot, 56.879)       
+
+	// Корректировка 21.08.2018 15.00
+	// Корректировка 27.10.2018 15.00
+end 
+*/ 
+ 
+/*
+rule "P5_initial" //эмуляция открытия закрытия двери 
+when
+    Time cron "0 0/1 * * * ?" //каждую 1 мин
+then
+	postUpdate(P5_Door, OPEN)
+	Thread::sleep(60000)
+	postUpdate(P5_Door, CLOSED)
+end
+*/ 
+
+/*  
+rule "initial" 	//чтобы уйти от NULL в самом начале
+when
+    System started
+then
+	postUpdate(CountWaterM3Hot_Consumption, 0)
+	postUpdate(CountWaterM3Cold_Consumption, 0)
+end
+*/
+
+/* =============================================================================================================== */ 
+
+//ВЫКЛ всё 
+
+rule "P2 ALL OFF" 
+when
+    Item P2_ALL changed to ON     
+then
+	publish("mosquitto","cmnd/ElectroDragon1/POWER1","OFF")
+	publish("mosquitto","cmnd/ElectroDragon2/POWER1","OFF")
+	publish("mosquitto","cmnd/ElectroDragon2/POWER2","OFF")
+	publish("mosquitto","cmnd/Table_lamp/POWER1","OFF")
+	publish("mosquitto","cmnd/ElectroDragon3/POWER1","OFF")
+	publish("mosquitto","cmnd/ElectroDragon3/POWER2","OFF")
+	publish("mosquitto","cmnd/Living_room/POWER1","OFF")
+	Thread::sleep(15000) //15000 миллисекунд в секундах
+	publish("mosquitto","cmnd/ElectroDragon1/POWER2","OFF") //прихожая
+end
+
+/*
+rule "P2 ALL ON" 
+when
+    Item P2_ALL_hold changed    
+then
+	publish("mosquitto","cmnd/ElectroDragon1/POWER2","ON") //прихожая
+	publish("mosquitto","cmnd/ElectroDragon1/POWER1","ON")
+	publish("mosquitto","cmnd/ElectroDragon2/POWER1","ON")
+	publish("mosquitto","cmnd/ElectroDragon2/POWER2","ON")
+	publish("mosquitto","cmnd/Table_lamp/POWER1","ON")
+	publish("mosquitto","cmnd/ElectroDragon3/POWER1","ON")
+	publish("mosquitto","cmnd/Living_room/POWER1","ON")
+end
+*/
+
+/* =============================================================================================================== */ 
+
+rule "Time to SSD1306"
+when
+	Time cron "0 0/1 * * * ?" //каждую 1 минут
+then
+	var String Temp = (((P1_HTU21D_Temp.state as DecimalType)*10).intValue/10.0).toString //оставляем один знак после запятой и преобразуем в строку
+	//val Temp = String::format("%.0f", (P1_HTU21D_Temp.state as DecimalType).doubleValue )
+
+	var String Hour = String::format( "%1$tk", new Date() ) //https://docs.oracle.com/javase/8/docs/api/java/util/Formatter.html
+	var String Minute = String::format( "%1$tM", new Date() )
+
+	sendHttpGetRequest("http://192.168.88.60/sec/?pt=3&disp_cmd=1&row=0")	//очистка верней строки
+	Thread::sleep(2000) //2000 миллисекунд в секундах	
+	sendCommand(P3_SSD1306_Text,"ssssssss") //очистка основной строки
+	Thread::sleep(2500) //2500 миллисекунд в секундах
+	sendCommand(P3_SSD1306_SmallText, "Time") 
+	sendCommand(P3_SSD1306_Text, "_" + Hour + ";" + Minute) 
+	
+	Thread::sleep(30000) //30000 миллисекунд в секундах
+
+	sendHttpGetRequest("http://192.168.88.60/sec/?pt=3&disp_cmd=1&row=0")	//очистка верней строки
+	Thread::sleep(2000) //2000 миллисекунд в секундах	
+	sendCommand(P3_SSD1306_Text,"ssssssss") //очистка основной строки
+	Thread::sleep(2500) //2500 миллисекунд в секундах	
+	sendCommand(P3_SSD1306_SmallText, "Outdoor") 
+	sendCommand(P3_SSD1306_Text, "_" + Temp + ":") 
+end
+
+/* =============================================================================================================== */ 
+
+//подсчет показаний хол. воды
+
+rule "CountWaterImpCold"
+when
+   Item P8_WaterPulse_cold changed to ON //received update ON   
+then
+	var Number WatCold = CountWaterM3Cold.state as DecimalType
+	var Number tmp1
+	var Number Kal1
+	var Number Dif1
+   
+	tmp1 = WatCold + 0.01 // один полный импульс при прохождении 10 л жидкости 
+	postUpdate(CountWaterM3Cold, tmp1.doubleValue)
+	
+	if (CountWaterM3Cold.state instanceof DecimalType) {
+        Kal1 = CountWaterM3Cold.minimumSince(now.toDateMidnight.withDayOfMonth(1)).state as DecimalType //на начало месяца
+	    postUpdate(CountWaterM3Cold_Kalends, Kal1.doubleValue )
+       	Dif1 = tmp1 - Kal1
+       	postUpdate(CountWaterM3Cold_Consumption, Dif1.doubleValue )
+    	}    	
+end
+
+//подсчет показаний гор. воды
+rule "CountWaterImpHot"
+when
+   Item P9_WaterPulse_hot changed to ON //received update ON 
+then
+	var Number WatHot = CountWaterM3Hot.state as DecimalType
+	var Number tmp2
+	var Number Kal2
+	var Number Dif2
+   
+	tmp2 = WatHot + 0.01 // один полный импульс при прохождении 10 л жидкости 
+	postUpdate(CountWaterM3Hot, tmp2.doubleValue)
+	
+	if (CountWaterM3Hot.state instanceof DecimalType) {
+        Kal2 = CountWaterM3Hot.minimumSince(now.toDateMidnight.withDayOfMonth(1)).state as DecimalType //на начало месяца
+	    postUpdate(CountWaterM3Hot_Kalends, Kal2.doubleValue )
+       	Dif2 = tmp2 - Kal2
+       	postUpdate(CountWaterM3Hot_Consumption, Dif2.doubleValue )
+    	}	
+end
+
+//отображение воды в sitemap
+rule "WaterSitemap"
+when
+	Time cron "0 0/10 * * * ?" //каждые 10 минут
+then
+	val CropDigital3 = String::format("%.2f", (CountWaterM3Cold.state as DecimalType).doubleValue )
+	val CropDigital4 = String::format("%.2f", (CountWaterM3Cold_Consumption.state as DecimalType).doubleValue )
+	postUpdate(CountWaterM3Cold_general, CropDigital3 + " (" + CropDigital4 + " в тек.мес.)" )	    
+	
+	val CropDigital5 = String::format("%.2f", (CountWaterM3Hot.state as DecimalType).doubleValue )
+	val CropDigital6 = String::format("%.2f", (CountWaterM3Hot_Consumption.state as DecimalType).doubleValue )
+	postUpdate(CountWaterM3Hot_general, CropDigital5 + " (" + CropDigital6 + " в тек.мес.)" )	
+end
+
+/* =============================================================================================================== */ 
+//подсчет кВт*ч эл. счетчика через счетчик порта MegaD 
+
+rule "MercuryIncotex201KWh"
+when
+   Item P10_CountElecImp changed
+then
+   var Number Imp = P10_CountElecImp.state as DecimalType
+   var Number KWh = MercuryIncotex201KWh.state as DecimalType
+   
+   if ( Imp >= 320 )	
+   		{
+	    //KWh = KWh + 0.1 // 1 кВт*ч - 3200 импульсов
+	    KWh = KWh + Imp/3200 // 1 кВт*ч - 3200 импульсов
+		postUpdate(MercuryIncotex201KWh, KWh)
+		sendHttpGetRequest("http://192.168.88.60/sec/?pt=10&cnt=0")
+		}
+end
+
+rule "MercuryIncotex201KWh_Past"
+when
+	Time cron "0 0/5 * * * ?" //каждые 5 минут
+then
+   var Number KWh = MercuryIncotex201KWh.state as DecimalType
+   var Number Kal
+   var Number Dif
+   var Number Pri
+   
+	if (MercuryIncotex201KWh.state instanceof DecimalType) {
+        Kal = MercuryIncotex201KWh.minimumSince(now.toDateMidnight.withDayOfMonth(1)).state as DecimalType //на начало месяца
+        //Kal = (MercuryIncotex201KWh.minimumSince(now.toDateMidnight.withDayOfMonth(1).withMonthOfYear(1), "rrd4j").state as DecimalType) //на начало года  //https://knx-user-forum.de/forum/supportforen/openhab/33557-anf%C3%A4nger
+	    postUpdate(MercuryIncotex201KWh_Kalends, Kal.doubleValue )
+       	Dif = KWh - Kal
+       	postUpdate(MercuryIncotex201KWh_Consumption, Dif.doubleValue )
+       	Pri = Dif * 3.62 //3,62 рубля за кВт*ч
+       	postUpdate(MercuryIncotex201KWh_Consumption_Price, Pri.doubleValue )
+ 	   }
+
+	val CropDigital1 = String::format("%.2f", KWh.doubleValue ) //формат строки для sitemap
+	val CropDigital2 = String::format("%.2f", Dif.doubleValue ) //формат строки для sitemap	
+	postUpdate(MercuryIncotex201KWh_general, CropDigital1 + " (" + CropDigital2 + " в тек.мес.)" )	   
+end
+
+/* =============================================================================================================== */ 
+//дверь 
+
+rule "P5 Door closed" //ON=закрыта
+when
+    Item P5_Door changed to ON     
+then
+	postUpdate(P5_last_use, new DateTimeType() )
+	postUpdate(P5_Door_state,  "закрыта")	
+end
+
+rule "P5 Door open" //OFF=открыта
+when
+    Item P5_Door changed to OFF
+then
+	var Number RunStart 
+	RunStart = now.millis
+	postUpdate(P5_DoorRunStart, RunStart.doubleValue ) // Timestamp when the switch was turned off	
+	postUpdate(P5_last_use, new DateTimeType() )
+	postUpdate(P5_Door_state,  "открыта" )
+	//postUpdate(P5_Door_state_general,  "открыта" )
+end
+
+rule "P5_last_use_ago" 
+when
+    Time cron "0 0/3 * * * ?" //каждые 3 мин
+then
+	//postUpdate(P5_DoorRunStart, 0) 
+	var Number RunStart = P5_DoorRunStart.state as DecimalType
+	var Number DoorTime
+	var Number RunEnd
+	RunEnd = now.millis
+ 	if (P5_Door.state==ON) {
+	DoorTime = (RunEnd - RunStart) / 3600000 //миллисекунды в часы
+	postUpdate(P5_last_use_ago, DoorTime.doubleValue)
+	
+	val CropDigital = String::format("%.2f", DoorTime.doubleValue ) //формат строки для sitemap
+	postUpdate(P5_Door_state_general, P5_Door_state.state + " (" + CropDigital + " ч)" )	
+	}	
+end
+
+/* =============================================================================================================== */
+
+// пересчет Volume adjustment в децибелы
+
+rule "USB_Maximum_amplitude"  
+when  
+    Time cron "0 0/1 * * * ?" //каждую 11 минуту
+    //Item USB_Maximum_amplitude received update 
+then  
+	var Number Vol=Float::parseFloat(String::format("%s",USB_Maximum_amplitude.state))
+	Vol = 20 * Math::log10(Vol.doubleValue()) + 80 //dB = 20 x log10(Amplitude) - zero_offset - https://forum.arduino.cc/index.php?topic=376308.0
+	postUpdate(USB_Maximum_amplitude_dB, Vol) //с микрофона
+
+	var Number Vol2=Float::parseFloat(String::format("%s",P36_XP5_ADC.state))
+ 	if (Vol2==0) { Vol2 = 1 }	
+	Vol2 = 20 * Math::log10(Vol2.doubleValue()) + 20
+	postUpdate(P36_XP5_ADC_dB, Vol2) //с платы
+
+/*	if ( Vol > 120) {	
+		postUpdate(USB_Maximum_amplitude_dB, 120) //не может быть больше 120 дБ		
+		}	else {
+	postUpdate(USB_Maximum_amplitude_dB, Vol.doubleValue) //Настоящее значение 	
+	}
+*/
+end  
+
+
+/* =============================================================================================================== */
+
+// перезагрузка камеры Beward B2710DR по расписанию 
+
+rule "Beward reset"
+when
+    Time cron "0 30 05 ? * MON,WED,FRI,SUN" //http://www.quartz-scheduler.org/documentation/quartz-2.1.x/tutorials/tutorial-lesson-06
+then
+	publish("mosquitto","cmnd/Camera12v/POWER1","OFF")
+	Thread::sleep(60000)
+	publish("mosquitto","cmnd/Camera12v/POWER1","ON")
+end
+
+/* =============================================================================================================== */
+// Перекрытие воды
+
+rule "WaterOverlap" 
+when
+    Item WaterOverlap received command      
+then
+	if (WaterOverlap.state == 1) {
+			publish("mosquitto", "megad/60/cmd","11:0")
+			Thread::sleep(100) 
+			publish("mosquitto", "megad/60/cmd","12:0")
+			Thread::sleep(100) 
+			publish("mosquitto", "megad/60/cmd","11:1") //двигаем
+			Thread::sleep(18000) //миллисекунд в секундах
+			publish("mosquitto", "megad/60/cmd","11:0")
+            }  
+	if (WaterOverlap.state == 2) {
+			publish("mosquitto", "megad/60/cmd","11:0")
+			Thread::sleep(100) 
+			publish("mosquitto", "megad/60/cmd","12:0")
+			Thread::sleep(100) 
+			publish("mosquitto", "megad/60/cmd","12:1") //двигаем
+			Thread::sleep(18000) //миллисекунд в секундах
+			publish("mosquitto", "megad/60/cmd","12:0")
+            }  		
+end
+
+/* =============================================================================================================== */
+
+/* =============================================================================================================== */
+
+
+/* =============================================================================================================== */
+
+
+
+/* =============================================================================================================== */

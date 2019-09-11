@@ -1,0 +1,53 @@
+sitemap default label="ххххх"	
+{
+Frame label="Квартира" {
+Text item=Lamp {
+    Switch item=Lamp mappings=[OFF="ВЫКЛ всё", ON="ВКЛ всё"]	
+    Switch item=ElectroDragon1_WC			
+    Switch item=ElectroDragon1_Corridor		 	
+    Switch item=ElectroDragon2_Bath			
+    Switch item=ElectroDragon2_Kitchen		
+    Switch item=Sonoff_Table_lamp			
+    Switch item=ElectroDragon3_Bedroom	    
+    Switch item=ElectroDragon3_Boxroom		
+    Switch item=Sonoff_Living_room	
+    //Switch item=Ghost_Lights 
+}
+Group item=Indoor
+Group item=Pipes 
+Text item=P5_Door_state_general
+Text item=Counters {
+    Frame label="Электроэнергия" {
+    Text item=MercuryIncotex201KWh_general
+    Text item=MercuryIncotex201KWh_Kalends
+    }
+        Frame label="Холодная вода (ХВС)" {
+        Text item=CountWaterM3Cold_general
+        Text item=CountWaterM3Cold_Kalends
+        }
+    Frame label="Горячая вода (ГВС)" {
+    Text item=CountWaterM3Hot_general
+    Text item=CountWaterM3Hot_Kalends
+    }
+    }
+Text item=dateTimeNTP 
+}
+
+Frame label="Улица" {
+	Text item=P1_HTU21D_Temp 
+	Text item=P1_HTU21D_Hum			
+	Text item=P1_MAX44009 
+    }
+
+Frame label="Служебное" {
+    Text item=ChartPeriodName {
+    Image refresh=60000 url="http://192.168.88.70:3000/render/dashboard-solo/db/font8?refresh=5m&orgId=1&panelId=2&theme=light&width=700&height=350"
+    Image refresh=60000 url="http://192.168.88.70:3000/render/dashboard-solo/db/font8?refresh=5m&orgId=1&panelId=1&theme=light&width=700&height=350"
+    Image refresh=60000 url="http://192.168.88.70:3000/render/dashboard-solo/db/font8?refresh=5m&orgId=1&panelId=9&theme=light&width=700&height=350"
+    }
+    Switch item=WaterOverlap mappings=[1="Течет", 2="Перекрыто"]
+	Group item=Systeminfo
+	Group item=Reachable
+}	
+
+}

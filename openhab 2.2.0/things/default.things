@@ -1,0 +1,31 @@
+/*Bridge megad:bridge:14in  [port=8989]
+{
+    Thing device P2_ALL [hostname="192.168.88.60", port="2", password="sec", refresh="0"]
+    Thing device P4_Domofon [hostname="192.168.88.60", port="4", password="sec", refresh="0"]
+    Thing device P5_Door [hostname="192.168.88.60", port="5", password="sec", refresh="0"] 
+    Thing device P8_WaterPulse_cold [hostname="192.168.88.60", port="8", password="sec", refresh="60"] 
+    Thing device P9_WaterPulse_hot [hostname="192.168.88.60", port="9", password="sec", refresh="60"] 
+    Thing device P10_CountElecImp [hostname="192.168.88.60", port="10", password="sec", refresh="20"] 
+}
+*/
+
+//==============================================================================================================
+
+Thing network:pingdevice:LAN_Beward     [ hostname="192.168.88.40" ]
+Thing network:pingdevice:LAN_MegaD2561  [ hostname="192.168.88.60" ]
+Thing network:pingdevice:LAN_MikroTik   [ hostname="192.168.88.2" ]
+
+//==============================================================================================================
+
+Thing exec:command:USB_Maximum_amplitude [command="bash /etc/openhab2/exec/USB_dB.sh", transform="REGEX((.*?))", interval=60, autorun=true]
+
+//==============================================================================================================
+
+Thing systeminfo:computer:work [interval_high=60, interval_medium=120] 
+
+//==============================================================================================================
+
+ntp:ntp:pool  [ hostname="nl.pool.ntp.org", refreshInterval=60, refreshNtp=30 ]
+
+//==============================================================================================================
+
