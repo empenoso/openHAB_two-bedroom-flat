@@ -10,4 +10,4 @@
 _________
 :exclamation: ВНИМАНИЕ :exclamation:
 
-:point_right: Решил больше не пользоваться openHAB с лета 2019 года. Перешел на Home Assistant https://github.com/empenoso/two-bedroom-flat-Home-Assistant. :point_left:
+:point_right: Решил больше не пользоваться openHAB с лета 2019 года. Перешел на Home Assistant https://github.com/empenoso/Home-Assistant_two-bedroom-flat. :point_left:
