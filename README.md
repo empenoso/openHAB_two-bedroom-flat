@@ -1,9 +1,9 @@
 # Полная автоматизация двухкомнатной квартиры c openHAB
-Автоматизация сделана при помощи реле [Wifi IoT Relay Board Based on ESP8266](https://www.electrodragon.com/product/wifi-iot-relay-board-based-esp8266/) и [Sonoff Basic WiFi Wireless Switch](https://www.itead.cc/smart-home/sonoff-wifi-wireless-switch.html) с прошивкой [Tasmota](https://github.com/arendst/Tasmota). Также используется многофункциональный контроллер [MegaD-2561](https://www.ab-log.ru/smart-house/ethernet/megad-2561).
+Автоматизация была сделана при помощи реле [Wifi IoT Relay Board Based on ESP8266](https://www.electrodragon.com/product/wifi-iot-relay-board-based-esp8266/) и [Sonoff Basic WiFi Wireless Switch](https://www.itead.cc/smart-home/sonoff-wifi-wireless-switch.html) с прошивкой [Tasmota](https://github.com/arendst/Tasmota). Также использовался многофункциональный контроллер [MegaD-2561](https://www.ab-log.ru/smart-house/ethernet/megad-2561).
 
-Подробности на [форуме производителя MegaD-2561](https://www.ab-log.ru/forum/viewtopic.php?f=1&t=1208&start=480#p36897).
+Подробности на [форуме](https://www.ab-log.ru/forum/viewtopic.php?f=1&t=1208&start=480#p36897).
 
-Вид интерфейса openHAB:
+Последний вид интерфейса openHAB 2.2:
 
 ![Текущий вид интерфейса Home Assistant](https://github.com/empenoso/two-bedroom-flat-openHAB/blob/master/openhab%202.2.0/Screenshot_20180211-130736.png)
 ![Текущий вид интерфейса Home Assistant](https://github.com/empenoso/two-bedroom-flat-openHAB/blob/master/openhab%202.2.0/Screenshot_20180211-130742.png)
