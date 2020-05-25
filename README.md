@@ -5,8 +5,6 @@
 - [Умная хрущёвка на максималка](https://habr.com/ru/post/503646/). 
 - [Как я 1000 дней пользовался OpenHAB, а затем перешел на Home Assistant](https://habr.com/ru/post/485848/). 
 
-Подробности на [форуме](https://www.ab-log.ru/forum/viewtopic.php?f=1&t=1208&start=480#p36897).
-
 Последний вид интерфейса openHAB 2.2:
 
 ![Текущий вид интерфейса Home Assistant](https://github.com/empenoso/two-bedroom-flat-openHAB/blob/master/openhab%202.2.0/Screenshot_20180211-130736.png)
